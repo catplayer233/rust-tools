@@ -5,6 +5,8 @@ use std::process;
 use std::thread;
 use std::time::{Duration, SystemTime};
 
+use chrono::{DateTime, Local};
+
 const WRONG_ARGUMENT_LENGTH: i32 = 1;
 const WRONG_IP_FORMAT: i32 = 2;
 const WRONG_PORT: i32 = 3;
@@ -13,11 +15,13 @@ const WRONG_IP_PART: i32 = 4;
 fn main() {
     println!("******start monitor******");
     let start_time = SystemTime::now();
+    println!("start time is: {}", display_time(&start_time));
     let arguments: Vec<String> = env::args().collect();
     let socket_addr_v4 = new_socket_v4_addr(arguments);
 
     let tcp_stream = try_connect(&socket_addr_v4);
     let end_time = SystemTime::now();
+    println!("end time is: {}", display_time(&end_time));
     println!("******cost time is {} mills******", end_time.duration_since(start_time).unwrap().as_millis());
     tcp_stream.shutdown(Both).unwrap_or_else(|err| {
         eprintln!("close with error:{}", err);
@@ -61,4 +65,9 @@ fn try_connect(socket_addr: &SocketAddrV4) -> TcpStream {
         try_connect(&socket_addr)
     });
     tcp_stream
+}
+
+fn display_time(time: &SystemTime) -> String {
+    let date_time: DateTime<Local> = time.clone().into();
+    date_time.format("%Y-%m-%d %H:%M:%S").to_string()
 }
