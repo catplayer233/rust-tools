@@ -32,11 +32,11 @@ pub struct JavaClass {
 impl JavaClass {
     pub fn new(class_bytes: &mut Vec<ClassByte>) -> Self {
         let minor_version = get_bytes_to_u16(class_bytes);
-        let major_version = get_bytes_to_u16(major_version);
+        let major_version = get_bytes_to_u16(class_bytes);
         let java_version = JavaVersion::new(minor_version, major_version);
 
         println!("java minor version: {}", java_version.minor_version);
-        println!("java language version: {}", java_version.major_version);
+        println!("java language version: {}", java_version.major_language_version());
 
         JavaClass {
             version: java_version
@@ -54,7 +54,11 @@ impl JavaVersion {
     }
 
     fn major_language_version(&self) -> String {
-        String::from(self.major_version)
+        let java_language_version = self.major_version - 0x2D + 1;
+        let mut java_language_version_desc = String::new();
+        java_language_version_desc.push_str("jdk ");
+        java_language_version_desc.push_str(&java_language_version.to_string());
+        java_language_version_desc
     }
 }
 
