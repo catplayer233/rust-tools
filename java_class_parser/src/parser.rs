@@ -23,6 +23,7 @@ use std::fs;
 use std::process::exit;
 
 use crate::utils::{get_bytes_to_u16, get_bytes_to_u32};
+use crate::constants::{JDK_LANGUAGE_NAME, JDK_MAJOR_BASIC_VERSION, JAVA_MAGIC_NUMBER};
 
 pub struct JavaClass {
     version: JavaVersion,
@@ -54,9 +55,10 @@ impl JavaVersion {
     }
 
     fn major_language_version(&self) -> String {
-        let java_language_version = self.major_version - 0x2D + 1;
+        let java_language_version = self.major_version - JDK_MAJOR_BASIC_VERSION + 1;
         let mut java_language_version_desc = String::new();
-        java_language_version_desc.push_str("jdk ");
+        java_language_version_desc.push_str(JDK_LANGUAGE_NAME);
+        java_language_version_desc.push_str(" ");
         java_language_version_desc.push_str(&java_language_version.to_string());
         java_language_version_desc
     }
@@ -68,9 +70,6 @@ pub struct JavaVersion {
 }
 
 type ClassByte = u8;
-
-const CAFE_BABE: u32 = 0xCAFEBABE;
-
 
 // # load the java class file with the target file system path
 pub fn parse(class_location: &str) -> JavaClass {
@@ -93,7 +92,7 @@ fn check_magic_number(class_bytes: &mut Vec<ClassByte>) -> bool {
     }
     //CAFE BABE
     let magic_number = get_bytes_to_u32(class_bytes);
-    magic_number == CAFE_BABE
+    magic_number == JAVA_MAGIC_NUMBER
 }
 
 #[cfg(test)]
