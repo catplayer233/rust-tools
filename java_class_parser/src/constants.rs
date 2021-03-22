@@ -5,3 +5,5 @@ pub const JDK_LANGUAGE_NAME: &str = "jdk";
 pub const JDK_MAJOR_BASIC_VERSION: u16 = 0x2D;
 // java class's magic number
 pub const JAVA_MAGIC_NUMBER: u32 = 0xCAFEBABE;
+
+pub type ClassByte = u8;

@@ -19,57 +19,33 @@
 //!     attribute_info attributes[attributes_count];
 //! }
 //! ```
+use std::convert::TryInto;
 use std::fs;
 use std::process::exit;
 
+use crate::constant_pool::parser::{ConstantPool, parse_constant_pool};
+use crate::constants::{ClassByte, JAVA_MAGIC_NUMBER, JDK_LANGUAGE_NAME, JDK_MAJOR_BASIC_VERSION};
 use crate::utils::{get_bytes_to_u16, get_bytes_to_u32};
-use crate::constants::{JDK_LANGUAGE_NAME, JDK_MAJOR_BASIC_VERSION, JAVA_MAGIC_NUMBER};
+use crate::version::parser::{JavaVersion, parse_java_version};
 
 pub struct JavaClass {
     version: JavaVersion,
-
+    constant_pool: ConstantPool,
 }
 
+//api for class
 impl JavaClass {
     pub fn new(class_bytes: &mut Vec<ClassByte>) -> Self {
-        let minor_version = get_bytes_to_u16(class_bytes);
-        let major_version = get_bytes_to_u16(class_bytes);
-        let java_version = JavaVersion::new(minor_version, major_version);
-
-        println!("java minor version: {}", java_version.minor_version);
-        println!("java language version: {}", java_version.major_language_version());
+        let version = parse_java_version(class_bytes);
+        let constant_pool = parse_constant_pool(class_bytes);
 
         JavaClass {
-            version: java_version
+            version,
+            constant_pool,
         }
     }
 }
 
-
-impl JavaVersion {
-    fn new(minor_version: u16, major_version: u16) -> Self {
-        JavaVersion {
-            minor_version,
-            major_version,
-        }
-    }
-
-    fn major_language_version(&self) -> String {
-        let java_language_version = self.major_version - JDK_MAJOR_BASIC_VERSION + 1;
-        let mut java_language_version_desc = String::new();
-        java_language_version_desc.push_str(JDK_LANGUAGE_NAME);
-        java_language_version_desc.push_str(" ");
-        java_language_version_desc.push_str(&java_language_version.to_string());
-        java_language_version_desc
-    }
-}
-
-pub struct JavaVersion {
-    minor_version: u16,
-    major_version: u16,
-}
-
-type ClassByte = u8;
 
 // # load the java class file with the target file system path
 pub fn parse(class_location: &str) -> JavaClass {
@@ -79,20 +55,24 @@ pub fn parse(class_location: &str) -> JavaClass {
                 println!("can not get the class file in: {}, reason is: {}, just ended.", class_location, err);
                 exit(-1);
             });
-    let result = check_magic_number(&mut class_bytes);
-    println!("check result: {}", result);
+    check_magic_number(&mut class_bytes).map_err(|error_message|
+        println!("the class file is invalid: {}", error_message));
     JavaClass::new(&mut class_bytes)
 }
 
-fn check_magic_number(class_bytes: &mut Vec<ClassByte>) -> bool {
+fn check_magic_number(class_bytes: &mut Vec<ClassByte>) -> Result<(), String> {
     //get the length, if the length shorter than the magic number that means
     //the target class bytes is not a valid class of course
     if class_bytes.len() < 4 {
-        return false;
+        return Err(String::from("the class bytes' size is smaller than magic_number's length: 4"));
     }
     //CAFE BABE
     let magic_number = get_bytes_to_u32(class_bytes);
-    magic_number == JAVA_MAGIC_NUMBER
+    if magic_number == JAVA_MAGIC_NUMBER {
+        Ok(())
+    } else {
+        Err(String::from("the magic number is not as same as 0xCAFEBABE"))
+    }
 }
 
 #[cfg(test)]
